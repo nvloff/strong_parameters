@@ -139,6 +139,10 @@ module ActionController
       rescue_from(ActionController::ParameterMissing) do |parameter_missing_exception|
         render :text => "Required parameter missing: #{parameter_missing_exception.param}", :status => :bad_request
       end
+
+      rescue_from(ActionController::ParameterForbidden) do |parameter_forbidden_exception|
+        render :text => "Parameters forbidden: #{parameter_forbidden_exception.param.join(' ')}", :status => :bad_request
+      end
     end
 
     def params
