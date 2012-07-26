@@ -12,6 +12,15 @@ module ActionController
     end
   end
 
+  class ParameterForbidden < IndexError
+    attr_reader :param
+
+    def initialize(param)
+      @param = param
+      super("key forbidden: #{param}")
+    end
+  end
+
   class Parameters < ActiveSupport::HashWithIndifferentAccess
     attr_accessor :permitted
     alias :permitted? :permitted
@@ -29,8 +38,32 @@ module ActionController
     def require(key)
       self[key].presence || raise(ActionController::ParameterMissing.new(key))
     end
-    
+
     alias :required :require
+
+    def strict(*filters)
+      check_strictness(*filters)
+      permit(*filters)
+    end
+
+    def check_strictness(*filters)
+      param_keys = filters.map { |filter| filter.is_a?(Hash) ? filter.keys : filter }
+      param_keys = param_keys.flatten.map(&:to_s)
+      diff = self.keys - param_keys
+
+      # exit on first mismatch
+      raise(ActionController::ParameterForbidden.new(diff)) unless diff.empty?
+
+      filters.each do |filter|
+        if filter.is_a?(Hash)
+          filter.each do |key,value|
+            params = self.class.new(self[key])
+            params.check_strictness(*Array.wrap(filter[key]))
+          end
+        end
+      end
+
+    end
 
     def permit(*filters)
       params = self.class.new
