@@ -1,6 +1,6 @@
 class ArticlesController < ActionController::Base
   def create
-    params[:author].strict(:name)
+    params[:author].strict!.permit(:name)
     head :ok
   end
 end

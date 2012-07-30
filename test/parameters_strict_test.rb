@@ -10,42 +10,42 @@ class ParametersStrictTest < ActiveSupport::TestCase
 
   test 'raises ParameterForbidden when we have extra parameters' do
     e = assert_raises(ActionController::ParameterForbidden) do
-      @params[:person].strict(:age)
+      @params[:person].strict!.permit(:age)
     end
   end
 
   test 'doesnt raise ParameterForbidden when the parameter are exact' do
     assert_nothing_raised do
-      @params[:person].strict(:age, :name)
+      @params[:person].strict!.permit(:age, :name)
     end
   end
 
   test 'doesnt raise ParameterForbidden when the parameter are exact using nesting' do
     assert_nothing_raised do
-      @params[:person].strict(:age, name: [:first, :last])
+      @params[:person].strict!.permit(:age, name: [:first, :last])
     end
   end
 
   test 'raises ParameterForbidden when we have extra nested parameters' do
     e = assert_raises(ActionController::ParameterForbidden) do
-      @params[:person].strict(:age, name: [:first, :third])
+      @params[:person].strict!.permit(:age, name: [:first, :third])
     end
   end
 
   test 'raises ParameterForbidden when we have extra deep nested parameters' do
     e = assert_raises(ActionController::ParameterForbidden) do
-      @params.strict(person: [ :age, name: [:first, :third]])
+      @params.strict!.permit(person: [ :age, name: [:first, :third]])
     end
   end
 
   test 'doesnt raise ParameterForbidden when the parameter are exact using deep nesting' do
     assert_nothing_raised do
-      @params.strict(person: [ :age, name: [:first, :last]])
+      @params.strict!.permit(person: [ :age, name: [:first, :last]])
     end
   end
 
   test 'the strict params are permitted' do
-    assert @params[:person].strict(:age, :name).permitted?
+    assert @params[:person].strict!.permit(:age, :name).permitted?
   end
 
   test 'works with embedded hashes' do
@@ -54,7 +54,7 @@ class ParametersStrictTest < ActiveSupport::TestCase
     )
 
     e = assert_raises(ActionController::ParameterForbidden) do
-      nested_hash_params.strict( :email, profile: { person_description: []})
+      nested_hash_params.strict!.permit( :email, profile: { person_description: []})
     end
   end
 

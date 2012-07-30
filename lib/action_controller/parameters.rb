@@ -28,6 +28,7 @@ module ActionController
     def initialize(attributes = nil)
       super(attributes)
       @permitted = false
+      @strict = false
     end
 
     def permit!
@@ -41,56 +42,14 @@ module ActionController
 
     alias :required :require
 
-    def strict(*filters)
-      check_strictness(*filters)
-      permit(*filters)
-    end
-
-    def check_strictness(*filters)
-      param_keys = filters.map { |filter| filter.is_a?(Hash) ? filter.keys : filter }
-      param_keys = param_keys.flatten.map(&:to_s)
-      diff = self.keys - param_keys
-
-      # exit on first mismatch
-      raise(ActionController::ParameterForbidden.new(diff)) unless diff.empty?
-
-      filters.each do |filter|
-        if filter.is_a?(Hash)
-          filter.each do |key,value|
-            params = self.class.new(self[key])
-            params.check_strictness(*Array.wrap(filter[key]))
-          end
-        end
-      end
-
+    def strict!
+      @strict = true
+      self
     end
 
     def permit(*filters)
-      params = self.class.new
-
-      filters.each do |filter|
-        case filter
-        when Symbol, String then
-          params[filter] = self[filter] if has_key?(filter)
-        when Hash then
-          self.slice(*filter.keys).each do |key, value|
-            return unless value
-
-            key = key.to_sym
-
-            params[key] = each_element(value) do |value|
-              # filters are a Hash, so we expect value to be a Hash too
-              next if filter.is_a?(Hash) && !value.is_a?(Hash)
-
-              value = self.class.new(value) if !value.respond_to?(:permit)
-
-              value.permit(*Array.wrap(filter[key]))
-            end
-          end
-        end
-      end
-
-      params.permit!
+      check_parameters(*filters) if @strict
+      permit_parameters(*filters)
     end
 
     def [](key)
@@ -112,6 +71,54 @@ module ActionController
         duplicate.instance_variable_set :@permitted, @permitted
       end
     end
+
+    protected
+      def check_parameters(*filters)
+        param_keys = filters.map { |filter| filter.is_a?(Hash) ? filter.keys : filter }
+        param_keys = param_keys.flatten.map(&:to_s)
+        diff = self.keys - param_keys
+
+        # exit on first mismatch
+        raise(ActionController::ParameterForbidden.new(diff)) unless diff.empty?
+
+        filters.each do |filter|
+          if filter.is_a?(Hash)
+            filter.each do |key,value|
+              params = self.class.new(self[key])
+              params.check_parameters(*Array.wrap(filter[key]))
+            end
+          end
+        end
+
+      end
+
+      def permit_parameters(*filters)
+        params = self.class.new
+
+        filters.each do |filter|
+          case filter
+          when Symbol, String then
+            params[filter] = self[filter] if has_key?(filter)
+          when Hash then
+            self.slice(*filter.keys).each do |key, value|
+              return unless value
+
+              key = key.to_sym
+
+              params[key] = each_element(value) do |value|
+                # filters are a Hash, so we expect value to be a Hash too
+                next if filter.is_a?(Hash) && !value.is_a?(Hash)
+
+                value = self.class.new(value) if !value.respond_to?(:permit)
+
+                value.permit_parameters(*Array.wrap(filter[key]))
+              end
+            end
+          end
+        end
+
+        params.permit!
+      end
 
     private
       def convert_hashes_to_parameters(key, value)
