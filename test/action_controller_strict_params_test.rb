@@ -10,7 +10,7 @@ class ActionControllerStrongParamsTest < ActionController::TestCase
 
   test "missing strict parameters will raise exception" do
     post :create, { author: { pet: "Toby" } }
-    assert_response :bad_request
+    assert_response :unprocessable_entity
   end
 
   test "strict parameters that are present will not raise" do

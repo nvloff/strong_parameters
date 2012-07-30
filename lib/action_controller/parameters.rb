@@ -148,7 +148,7 @@ module ActionController
       end
 
       rescue_from(ActionController::ParameterForbidden) do |parameter_forbidden_exception|
-        render :text => "Parameters forbidden: #{parameter_forbidden_exception.param.join(' ')}", :status => :bad_request
+        render :text => "Parameters forbidden: #{parameter_forbidden_exception.param.join(' ')}", :status => :unprocessable_entity
       end
     end
 
