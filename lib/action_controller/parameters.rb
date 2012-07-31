@@ -22,6 +22,8 @@ module ActionController
   end
 
   class Parameters < ActiveSupport::HashWithIndifferentAccess
+    cattr_accessor :strict_config
+
     attr_accessor :permitted
     alias :permitted? :permitted
 
@@ -48,7 +50,7 @@ module ActionController
     end
 
     def permit(*filters)
-      check_parameters(*filters) if @strict
+      check_parameters(*filters) if @strict || @@strict_config
       permit_parameters(*filters)
     end
 

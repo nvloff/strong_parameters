@@ -58,4 +58,17 @@ class ParametersStrictTest < ActiveSupport::TestCase
     end
   end
 
+  test 'raises when enabled from class config' do
+    ActionController::Parameters.strict_config = true
+    e = assert_raises(ActionController::ParameterForbidden) do
+      @params[:person].permit(:age)
+    end
+  end
+
+  test 'its disabled by default' do
+    assert_nothing_raised do
+      @params[:person].permit(:age)
+    end
+  end
+
 end
