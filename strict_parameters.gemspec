@@ -5,7 +5,7 @@ require "strong_parameters/version"
 
 # Describe your gem and declare its dependencies:
 Gem::Specification.new do |s|
-  s.name        = "strong_parameters"
+  s.name        = "strict_parameters"
   s.version     = StrongParameters::VERSION
   s.authors     = ["David Heinemeier Hansson"]
   s.email       = ["david@heinemeierhansson.com"]
