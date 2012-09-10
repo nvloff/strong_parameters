@@ -2,7 +2,7 @@
 ENV["RAILS_ENV"] = "test"
 
 require 'test/unit'
-require 'strong_parameters'
+require 'strict_parameters'
 
 module ActionController
   SharedTestRoutes = ActionDispatch::Routing::RouteSet.new
