@@ -12,13 +12,25 @@ module ActionController
     end
   end
 
+  class ParameterForbidden < IndexError
+    attr_reader :param
+
+    def initialize(param)
+      @param = param
+      super("key forbidden: #{param}")
+    end
+  end
+
   class Parameters < ActiveSupport::HashWithIndifferentAccess
+    cattr_accessor :strict_config
+
     attr_accessor :permitted
     alias :permitted? :permitted
 
     def initialize(attributes = nil)
       super(attributes)
       @permitted = false
+      @strict = false
     end
 
     def permit!
@@ -32,8 +44,27 @@ module ActionController
 
     alias :required :require
 
+    def strict!
+      @strict = true
+      self
+    end
+
+    def check_parameters(*filters)
+      param_keys = filters.map do |filter|
+        filter.is_a?(Hash) ? filter.keys : filter
+      end.flatten.map(&:to_s)
+
+      (self.keys - param_keys).tap do |diff|
+        raise(ActionController::ParameterForbidden.new(diff)) unless diff.empty?
+      end
+   end
+
     def permit(*filters)
       params = self.class.new
+
+      if @strict || @@strict_config
+        check_parameters(*filters)
+      end
 
       filters.each do |filter|
         case filter
@@ -50,6 +81,8 @@ module ActionController
               next if filter.is_a?(Hash) && !value.is_a?(Hash)
 
               value = self.class.new(value) if !value.respond_to?(:permit)
+
+              value.strict! if @strict
 
               value.permit(*Array.wrap(filter[key]))
             end
@@ -110,6 +143,10 @@ module ActionController
     included do
       rescue_from(ActionController::ParameterMissing) do |parameter_missing_exception|
         render :text => "Required parameter missing: #{parameter_missing_exception.param}", :status => :bad_request
+      end
+
+      rescue_from(ActionController::ParameterForbidden) do |parameter_forbidden_exception|
+        render :text => "Parameters forbidden: #{parameter_forbidden_exception.param.join(' ')}", :status => :unprocessable_entity
       end
     end
 
